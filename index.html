@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor de Licitações – GMSS</title>
+  <style>
+    :root { color-scheme: light; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+
+    /* ===== LOGIN OVERLAY ===== */
+    #login-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #1a56db 0%, #1e429f 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #login-overlay.hidden { display: none; }
+
+    .login-box {
+      background: #fff; border-radius: 18px;
+      padding: 40px 40px 36px;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      text-align: center;
+    }
+    .login-logo {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: linear-gradient(135deg,#1a56db,#1e429f);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; margin: 0 auto 18px;
+    }
+    .login-box h1 { font-size: 20px; font-weight: 800; color: #111827; }
+    .login-box p  { font-size: 13px; color: #6b7280; margin-top: 4px; margin-bottom: 28px; }
+
+    .login-field { margin-bottom: 14px; text-align: left; }
+    .login-field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .login-field input {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid #e2e8f0; border-radius: 9px;
+      font-size: 14px; outline: none; transition: border-color .15s;
+    }
+    .login-field input:focus { border-color: #1a56db; }
+
+    .login-error {
+      background: #fef2f2; color: #dc2626;
+      border: 1px solid #fecaca; border-radius: 8px;
+      padding: 8px 12px; font-size: 13px;
+      margin-bottom: 14px; display: none;
+    }
+    .login-error.show { display: block; }
+
+    .btn-login {
+      width: 100%; padding: 11px;
+      background: linear-gradient(135deg,#1a56db,#1e429f);
+      color: #fff; border: none; border-radius: 9px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s; margin-top: 6px;
+    }
+    .btn-login:hover { opacity: .9; }
+    .btn-login:active { opacity: .8; }
+
+    .login-footer { margin-top: 22px; font-size: 11px; color: #9ca3af; }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, #1a56db 0%, #1e429f 100%);
+      color: #fff; padding: 18px 24px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+    .header-icon { width: 44px; height: 44px; background: rgba(255,255,255,.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .header-text h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+    .header-text p  { font-size: 12px; opacity: .8; margin-top: 2px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .header-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 4px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 7px; height: 7px; background: #6ee7b7; border-radius: 50%; }
+    .btn-logout { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+    .btn-logout:hover { background: rgba(255,255,255,.25); }
+
+    /* ===== TABS ===== */
+    .tabs { background: #fff; border-bottom: 2px solid #e2e8f0; display: flex; padding: 0 24px; gap: 4px; }
+    .tab-btn { padding: 12px 18px; border: none; background: transparent; font-size: 14px; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; }
+    .tab-btn:hover { color: #1a56db; }
+    .tab-btn.active { color: #1a56db; border-bottom-color: #1a56db; font-weight: 600; }
+
+    /* ===== CONTENT ===== */
+    .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== STATS BAR ===== */
+    .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.07); border-left: 4px solid; }
+    .stat-card.blue   { border-left-color: #1a56db; }
+    .stat-card.green  { border-left-color: #059669; }
+    .stat-card.purple { border-left-color: #7c3aed; }
+    .stat-card.orange { border-left-color: #d97706; }
+    .stat-card .num { font-size: 26px; font-weight: 700; line-height: 1; }
+    .stat-card .lbl { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+    /* ===== SECTION ===== */
+    .section-title { font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .section-title .pill { font-size: 11px; font-weight: 600; background: #e0e7ff; color: #3730a3; border-radius: 12px; padding: 2px 8px; }
+
+    /* ===== PORTAL CARDS ===== */
+    .portals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .portal-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; transition: box-shadow .15s, transform .15s; }
+    .portal-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); transform: translateY(-1px); }
+    .portal-card-header { padding: 14px 16px 10px; display: flex; align-items: flex-start; gap: 10px; }
+    .portal-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .portal-info h3 { font-size: 14px; font-weight: 700; color: #111827; }
+    .portal-info p  { font-size: 12px; color: #6b7280; margin-top: 3px; line-height: 1.4; }
+    .portal-card-footer { padding: 10px 16px 14px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f3f4f6; }
+    .badge-type { font-size: 10px; font-weight: 600; border-radius: 10px; padding: 2px 8px; text-transform: uppercase; letter-spacing: .3px; }
+    .badge-federal   { background: #dbeafe; color: #1e40af; }
+    .badge-estadual  { background: #d1fae5; color: #065f46; }
+    .badge-plataforma{ background: #ede9fe; color: #5b21b6; }
+    .badge-agregador { background: #fef3c7; color: #92400e; }
+    .badge-saude     { background: #fce7f3; color: #9d174d; }
+    .btn-search { margin-left: auto; background: #1a56db; color: #fff; border: none; border-radius: 7px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: background .15s; }
+    .btn-search:hover { background: #1e429f; }
+
+    /* ===== CONFIG ===== */
+    .config-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 22px; margin-bottom: 20px; }
+    .config-card h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .config-card p.hint { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+    .keywords-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .keyword-tag { background: #e0e7ff; color: #3730a3; border-radius: 20px; padding: 5px 12px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .keyword-tag button { background: none; border: none; cursor: pointer; color: #6d28d9; font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
+    .keyword-tag button:hover { color: #dc2626; }
+    .add-keyword-row { display: flex; gap: 8px; }
+    .add-keyword-row input { flex: 1; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; transition: border-color .15s; }
+    .add-keyword-row input:focus { border-color: #1a56db; }
+    .btn-add { background: #1a56db; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-add:hover { background: #1e429f; }
+
+    /* ===== TABLE ===== */
+    .search-links-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .search-links-table th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e2e8f0; }
+    .search-links-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+    .search-links-table tr:hover td { background: #f8fafc; }
+    .search-links-table a { color: #1a56db; text-decoration: none; font-weight: 500; }
+    .search-links-table a:hover { text-decoration: underline; }
+
+    /* ===== STEPS ===== */
+    .steps { display: flex; flex-direction: column; gap: 16px; }
+    .step { background: #fff; border-radius: 10px; padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; background: #1a56db; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .step-body h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .step-body p  { font-size: 13px; color: #6b7280; line-height: 1.6; }
+    .step-body code { background: #f3f4f6; border-radius: 4px; padding: 1px 6px; font-size: 12px; color: #1e429f; }
+    .alert-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #1e40af; margin-top: 20px; }
+    .alert-box .icon { font-size: 18px; flex-shrink: 0; }
+
+    @media (max-width: 700px) {
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .portals-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">🏥</div>
+    <h1>Monitor de Licitações</h1>
+    <p>GMSS — Acesso restrito</p>
+
+    <div class="login-field">
+      <label>Usuário</label>
+      <input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="username" />
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="login-pass" placeholder="Digite sua senha" autocomplete="current-password" />
+    </div>
+
+    <div class="login-error" id="login-error">Usuário ou senha incorretos. Tente novamente.</div>
+
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+
+    <div class="login-footer">Uso exclusivo GMSS &amp; assistentes autorizados</div>
+  </div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-icon">🏥</div>
+  <div class="header-text">
+    <h1>Monitor de Licitações – GMSS</h1>
+    <p>Monitoramento nacional de licitações na área de saúde</p>
+  </div>
+  <div class="header-right">
+    <div class="header-badge">
+      <span class="dot"></span>
+      <span id="last-update">Carregando...</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Sair</button>
+  </div>
+</div>
+
+<!-- ===== TABS ===== -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('portais', this)">📋 Portais de Licitação</button>
+  <button class="tab-btn" onclick="switchTab('config', this)">⚙️ Configurar Busca</button>
+  <button class="tab-btn" onclick="switchTab('links', this)">🔗 Links de Busca Rápida</button>
+  <button class="tab-btn" onclick="switchTab('ajuda', this)">📖 Como Funciona</button>
+</div>
+
+<div class="content">
+
+  <!-- ===== TAB PORTAIS ===== -->
+  <div id="tab-portais" class="tab-panel active">
+    <div class="stats-bar">
+      <div class="stat-card blue"><div class="num">18</div><div class="lbl">Portais mapeados</div></div>
+      <div class="stat-card green"><div class="num">3</div><div class="lbl">Portais federais</div></div>
+      <div class="stat-card purple"><div class="num">7</div><div class="lbl">Plataformas nacionais</div></div>
+      <div class="stat-card orange"><div class="num" id="kw-count">9</div><div class="lbl">Termos configurados</div></div>
+    </div>
+
+    <div class="section-title">🇧🇷 Portais Federais <span class="pill">Obrigatório</span></div>
+    <div class="portals-grid">
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#dbeafe">🏛️</div><div class="portal-info"><h3>PNCP – Portal Nacional de Contratações Públicas</h3><p>Central oficial de todas as contratações públicas do Brasil. Principal portal desde a Lei 14.133/21.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-federal">Federal</span><a href="https://pncp.gov.br/app/editais" target="_blank" class="btn-search">🔍 Buscar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🛒</div><div class="portal-info"><h3>Compras.gov.br</h3><p>Portal de compras do Governo Federal. Pregões, dispensas e inexigibilidades de órgãos federais.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-federal">Federal</span><a href="https://www.gov.br/compras/pt-br" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#fce7f3">📊</div><div class="portal-info"><h3>Portal da Transparência Federal</h3><p>Consulta pública a licitações e contratos do Governo Federal com filtros por área e valor.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-federal">Federal</span><a href="https://portaldatransparencia.gov.br/licitacoes" target="_blank" class="btn-search">🔍 Buscar</a></div>
+      </div>
+    </div>
+
+    <div class="section-title">🏢 Plataformas de Pregão Eletrônico <span class="pill">Alta cobertura</span></div>
+    <div class="portals-grid">
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">🛒</div><div class="portal-info"><h3>Portal de Compras Públicas</h3><p>Um dos maiores marketplaces de licitações do Brasil. Cobre municípios, estados e federação.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://www.portaldecompraspublicas.com.br/processos/" target="_blank" class="btn-search">🔍 Buscar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">📦</div><div class="portal-info"><h3>BLL – Bolsa de Licitações do Brasil</h3><p>Plataforma nacional que conecta fornecedores a órgãos públicos de todas as esferas.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://bll.org.br/licitacao" target="_blank" class="btn-search">🔍 Buscar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">⚡</div><div class="portal-info"><h3>Licitanet</h3><p>Pregão eletrônico utilizado por centenas de municípios e órgãos estaduais em todo o Brasil.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://www.licitanet.com.br/licita-licitacoes" target="_blank" class="btn-search">🔍 Buscar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">🔌</div><div class="portal-info"><h3>eLicitações</h3><p>Plataforma de pregão eletrônico com foco em municípios e consórcios públicos.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://elicitacoes.com.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">🖥️</div><div class="portal-info"><h3>ComprasNet (legado)</h3><p>Sistema histórico do Governo Federal. Mantém acesso a processos anteriores a 2021.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://www.comprasnet.gov.br/seguro/loginPortal.asp" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+    </div>
+
+    <div class="section-title">🔔 Agregadores e Alertas <span class="pill">Recomendado</span></div>
+    <div class="portals-grid">
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#fef3c7">🔔</div><div class="portal-info"><h3>Alerta Licitação</h3><p>Agrega licitações de dezenas de portais. Permite configurar alertas por CNAE e palavra-chave.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-agregador">Agregador</span><a href="https://alertalicitacao.com.br/" target="_blank" class="btn-search">🔍 Buscar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#fef3c7">📡</div><div class="portal-info"><h3>Licitei</h3><p>Plataforma de monitoramento com integração a 13+ portais. Disputa e gestão integrada.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-agregador">Agregador</span><a href="https://www.licitei.com.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#fef3c7">📰</div><div class="portal-info"><h3>Con-Licitação</h3><p>Portal de conteúdo e monitoramento de licitações com busca nacional integrada.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-agregador">Agregador</span><a href="https://conlicitacao.com.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+    </div>
+
+    <div class="section-title">🗺️ Portais Estaduais Principais</div>
+    <div class="portals-grid">
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🏙️</div><div class="portal-info"><h3>BEC/SP – Bolsa Eletrônica de Compras (São Paulo)</h3><p>Portal de licitações do Estado de SP. Um dos maiores em volume do país.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual SP</span><a href="https://www.bec.sp.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">⛰️</div><div class="portal-info"><h3>Compras MG (Minas Gerais)</h3><p>Portal de compras e licitações do Estado de Minas Gerais.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual MG</span><a href="https://www.compras.mg.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🌊</div><div class="portal-info"><h3>SIGA-RJ (Rio de Janeiro)</h3><p>Sistema integrado de licitações e contratos do Estado do RJ.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual RJ</span><a href="https://www.compras.rj.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🌲</div><div class="portal-info"><h3>Compras PR (Paraná)</h3><p>Portal de licitações eletrônicas do Estado do Paraná.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual PR</span><a href="https://www.compraspr.pr.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🌾</div><div class="portal-info"><h3>Compras RS (Rio Grande do Sul)</h3><p>Portal de compras governamentais do Estado do RS.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual RS</span><a href="https://www.compras.rs.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+    </div>
+
+    <div class="section-title">💊 Portais Específicos de Saúde <span class="pill">Foco GMSS</span></div>
+    <div class="portals-grid">
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#fce7f3">💉</div><div class="portal-info"><h3>Fundo Nacional de Saúde (FNS)</h3><p>Licitações do Ministério da Saúde. Equipamentos hospitalares, ambulâncias e serviços médicos.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-saude">Saúde</span><a href="https://fns.saude.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+      <div class="portal-card">
+        <div class="portal-card-header"><div class="portal-icon" style="background:#fce7f3">🚑</div><div class="portal-info"><h3>CONASS – Conselho Nacional de Secretários de Saúde</h3><p>Referência nacional para licitações em saúde pública estadual.</p></div></div>
+        <div class="portal-card-footer"><span class="badge-type badge-saude">Saúde</span><a href="https://www.conass.org.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB CONFIG ===== -->
+  <div id="tab-config" class="tab-panel">
+    <div class="config-card">
+      <h2>⚙️ Palavras-chave de Busca GMSS</h2>
+      <p class="hint">Configure os termos usados nas buscas diárias automáticas. Representam os serviços prestados pela GMSS.</p>
+      <div class="keywords-list" id="keywords-container"></div>
+      <div class="add-keyword-row">
+        <input type="text" id="new-keyword" placeholder="Ex: UTI móvel, home care, serviço de saúde..." maxlength="60" />
+        <button class="btn-add" onclick="addKeyword()">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="config-card">
+      <h2>📋 Termos configurados</h2>
+      <p class="hint">Baseado nos serviços da GMSS: locação de equipamentos hospitalares, gestão de mão de obra médica, consultas ambulatoriais, pronto socorro e locação de veículos/ambulâncias.</p>
+      <table class="search-links-table" style="margin-top:12px">
+        <thead><tr><th>#</th><th>Termo de busca</th><th>Categoria GMSS</th></tr></thead>
+        <tbody id="keywords-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== TAB LINKS ===== -->
+  <div id="tab-links" class="tab-panel">
+    <div class="config-card">
+      <h2>🔗 Links de Busca Rápida por Portal</h2>
+      <p class="hint">Links gerados automaticamente com suas palavras-chave. Clique para buscar diretamente em cada portal.</p>
+    </div>
+    <div id="search-links-container"></div>
+  </div>
+
+  <!-- ===== TAB AJUDA ===== -->
+  <div id="tab-ajuda" class="tab-panel">
+    <div class="config-card">
+      <h2>📖 Como funciona o monitoramento diário da GMSS</h2>
+      <p class="hint">O sistema funciona em dois níveis: este painel (acesso rápido a portais) + monitoramento automático diário via Claude.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><h3>Configure suas palavras-chave</h3><p>Na aba <strong>Configurar Busca</strong>, defina os termos que descrevem os serviços da GMSS. Ex: <code>equipamento hospitalar</code>, <code>ambulância</code>, <code>gestão saúde</code>.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><h3>Monitoramento diário automático</h3><p>Todo dia às <strong>08:00</strong>, o Claude pesquisa licitações nos portais principais e entrega um relatório no chat com urgência por prazo, valor estimado e link para o edital.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><h3>Busca manual pelos portais</h3><p>Use a aba <strong>Portais</strong> para acessar qualquer portal com um clique. Use <strong>Links de Busca Rápida</strong> para links pré-configurados com seus termos em cada portal.</p></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body"><h3>Personalização avançada</h3><p>Para afinar a busca diária, diga ao Claude: <code>"Filtrar apenas municípios de SP"</code> ou <code>"Apenas licitações acima de R$ 50.000"</code>.</p></div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-body"><h3>Cadastro para participar</h3><p>Para disputar as licitações encontradas, a GMSS precisa de cadastro no <strong>SICAF</strong> (federal), <strong>PNCP</strong>, <strong>BLL</strong> e nos portais estaduais onde atua.</p></div></div>
+    </div>
+    <div class="alert-box"><span class="icon">ℹ️</span><div><strong>Monitoramento ativo!</strong><br>Busca automática agendada para todos os dias às 08:00. Para alterar, basta pedir ao Claude na conversa.</div></div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+  // ===== AUTH =====
+  const USERS = { "eder": "2026" };
+
+  function doLogin() {
+    const user = document.getElementById('login-user').value.trim().toLowerCase();
+    const pass = document.getElementById('login-pass').value;
+    const err  = document.getElementById('login-error');
+    if (USERS[user] && USERS[user] === pass) {
+      err.classList.remove('show');
+      localStorage.setItem('gmss_auth', btoa(user + ':' + pass));
+      document.getElementById('login-overlay').classList.add('hidden');
+    } else {
+      err.classList.add('show');
+      document.getElementById('login-pass').value = '';
+    }
+  }
+
+  function doLogout() {
+    localStorage.removeItem('gmss_auth');
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-overlay').classList.remove('hidden');
+  }
+
+  function checkAuth() {
+    const stored = localStorage.getItem('gmss_auth');
+    if (stored) {
+      try {
+        const [u, p] = atob(stored).split(':');
+        if (USERS[u] && USERS[u] === p) {
+          document.getElementById('login-overlay').classList.add('hidden');
+          return;
+        }
+      } catch(e) {}
+    }
+    document.getElementById('login-overlay').classList.remove('hidden');
+  }
+
+  // Enter key on login
+  ['login-user','login-pass'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  });
+
+  // ===== KEYWORDS =====
+  const DEFAULT_KEYWORDS = [
+    { term: "equipamento hospitalar",     cat: "Locação de Equipamentos" },
+    { term: "locação equipamentos médicos",cat: "Locação de Equipamentos" },
+    { term: "ambulância",                 cat: "Locação de Veículos" },
+    { term: "locação veículo saúde",      cat: "Locação de Veículos" },
+    { term: "mão de obra médica",         cat: "Gestão de Pessoal" },
+    { term: "gestão saúde",               cat: "Gestão de Pessoal" },
+    { term: "pronto socorro",             cat: "Atendimento Médico" },
+    { term: "pronto atendimento",         cat: "Atendimento Médico" },
+    { term: "consulta ambulatorial",      cat: "Atendimento Médico" },
+  ];
+
+  const PORTALS = [
+    { name: "PNCP",                       url: kw => `https://pncp.gov.br/app/editais?q=${encodeURIComponent(kw)}` },
+    { name: "Portal de Compras Públicas", url: kw => `https://www.portaldecompraspublicas.com.br/processos/?busca=${encodeURIComponent(kw)}` },
+    { name: "BLL",                        url: kw => `https://bll.org.br/licitacao?q=${encodeURIComponent(kw)}` },
+    { name: "Alerta Licitação",           url: kw => `https://alertalicitacao.com.br/?s=${encodeURIComponent(kw)}` },
+    { name: "BEC/SP",                     url: kw => `https://www.bec.sp.gov.br/BEC_Pregao_UI/ui/compradores/frmConsultaPregoesEletronicos.aspx?txtObjeto=${encodeURIComponent(kw)}&btnBuscar=Pesquisar` },
+    { name: "Portal Transparência",       url: _  => `https://portaldatransparencia.gov.br/licitacoes` },
+  ];
+
+  let keywords = [];
+
+  function loadKeywords() {
+    try {
+      const s = localStorage.getItem('gmss_keywords');
+      keywords = s ? JSON.parse(s) : DEFAULT_KEYWORDS.map(k => ({...k}));
+    } catch(e) { keywords = DEFAULT_KEYWORDS.map(k => ({...k})); }
+    renderAll();
+  }
+
+  function saveKeywords() { try { localStorage.setItem('gmss_keywords', JSON.stringify(keywords)); } catch(e) {} }
+
+  function renderAll() {
+    const el = document.getElementById('kw-count');
+    if (el) el.textContent = keywords.length;
+
+    // tags
+    const c = document.getElementById('keywords-container');
+    c.innerHTML = '';
+    keywords.forEach((kw, i) => {
+      const tag = document.createElement('span');
+      tag.className = 'keyword-tag';
+      tag.innerHTML = `${kw.term} <button onclick="removeKeyword(${i})" title="Remover">×</button>`;
+      c.appendChild(tag);
+    });
+
+    // table
+    const tb = document.getElementById('keywords-table');
+    tb.innerHTML = '';
+    keywords.forEach((kw, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="color:#9ca3af;width:36px">${i+1}</td><td><strong>${kw.term}</strong></td><td style="color:#6b7280;font-size:12px">${kw.cat||'—'}</td>`;
+      tb.appendChild(tr);
+    });
+
+    // search links
+    const lc = document.getElementById('search-links-container');
+    lc.innerHTML = '';
+    PORTALS.forEach(portal => {
+      const card = document.createElement('div');
+      card.className = 'config-card';
+      card.style.marginBottom = '16px';
+      const rows = keywords.map(kw =>
+        `<tr><td>${kw.term}</td><td style="color:#9ca3af;font-size:12px">${kw.cat||''}</td><td><a href="${portal.url(kw.term)}" target="_blank">🔗 Abrir busca</a></td></tr>`
+      ).join('');
+      card.innerHTML = `<h2 style="margin-bottom:12px">🔍 ${portal.name}</h2>
+        <table class="search-links-table">
+          <thead><tr><th>Termo</th><th>Categoria</th><th>Link</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      lc.appendChild(card);
+    });
+  }
+
+  function addKeyword() {
+    const inp = document.getElementById('new-keyword');
+    const val = inp.value.trim();
+    if (!val) return;
+    if (keywords.find(k => k.term.toLowerCase() === val.toLowerCase())) {
+      inp.style.borderColor = '#ef4444';
+      setTimeout(() => inp.style.borderColor = '', 1200);
+      return;
+    }
+    keywords.push({ term: val, cat: 'Personalizado' });
+    saveKeywords(); inp.value = ''; renderAll();
+  }
+
+  function removeKeyword(i) { keywords.splice(i,1); saveKeywords(); renderAll(); }
+
+  document.getElementById('new-keyword').addEventListener('keydown', e => { if (e.key==='Enter') addKeyword(); });
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // Date
+  document.getElementById('last-update').textContent =
+    new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+
+  // Init
+  checkAuth();
+  loadKeywords();
+</script>
+</body>
+</html>
