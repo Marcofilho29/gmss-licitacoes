@@ -1,517 +1,1237 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monitor de Licitações – GMSS</title>
-  <style>
-    :root { color-scheme: light; }
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GMSS – Monitor de Licitações</title>
+<style>
+  :root {
+    --primary: #1a5276;
+    --primary-light: #2e86c1;
+    --accent: #148f77;
+    --danger: #c0392b;
+    --warning: #d4ac0d;
+    --success: #1e8449;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #dce3ec;
+    --text: #1a202c;
+    --muted: #6b7280;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* ===== LOGIN OVERLAY ===== */
-    #login-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(135deg, #1a56db 0%, #1e429f 100%);
-      display: flex; align-items: center; justify-content: center;
-    }
-    #login-overlay.hidden { display: none; }
+  /* LOGIN */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: linear-gradient(135deg, #1a5276 0%, #148f77 100%);
+  }
+  .login-box {
+    background: white; border-radius: 16px; padding: 48px 40px;
+    width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+  }
+  .login-logo { font-size: 40px; margin-bottom: 8px; }
+  .login-box h1 { font-size: 22px; color: var(--primary); margin-bottom: 4px; }
+  .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  .login-box input {
+    width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none; transition: border 0.2s;
+  }
+  .login-box input:focus { border-color: var(--primary-light); }
+  .login-btn {
+    width: 100%; padding: 13px; background: var(--primary); color: white;
+    border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .login-btn:hover { background: var(--primary-light); }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
 
-    .login-box {
-      background: #fff; border-radius: 18px;
-      padding: 40px 40px 36px;
-      width: 100%; max-width: 380px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.3);
-      text-align: center;
-    }
-    .login-logo {
-      width: 64px; height: 64px; border-radius: 16px;
-      background: linear-gradient(135deg,#1a56db,#1e429f);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 30px; margin: 0 auto 18px;
-    }
-    .login-box h1 { font-size: 20px; font-weight: 800; color: #111827; }
-    .login-box p  { font-size: 13px; color: #6b7280; margin-top: 4px; margin-bottom: 28px; }
+  /* APP SHELL */
+  #app { display: none; min-height: 100vh; flex-direction: column; }
 
-    .login-field { margin-bottom: 14px; text-align: left; }
-    .login-field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
-    .login-field input {
-      width: 100%; padding: 10px 14px;
-      border: 1.5px solid #e2e8f0; border-radius: 9px;
-      font-size: 14px; outline: none; transition: border-color .15s;
-    }
-    .login-field input:focus { border-color: #1a56db; }
+  /* HEADER */
+  .header {
+    background: var(--primary); color: white; padding: 0 24px;
+    display: flex; align-items: center; gap: 16px; height: 60px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .header-logo { font-size: 26px; }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; }
+  .header-sub { font-size: 11px; opacity: 0.7; margin-left: auto; }
+  .logout-btn {
+    background: rgba(255,255,255,0.15); border: none; color: white;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    transition: background 0.2s;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.25); }
 
-    .login-error {
-      background: #fef2f2; color: #dc2626;
-      border: 1px solid #fecaca; border-radius: 8px;
-      padding: 8px 12px; font-size: 13px;
-      margin-bottom: 14px; display: none;
-    }
-    .login-error.show { display: block; }
+  /* TABS */
+  .tabs-bar {
+    background: white; border-bottom: 2px solid var(--border);
+    display: flex; padding: 0 24px; overflow-x: auto;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .tab-btn {
+    padding: 16px 20px; border: none; background: none; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { color: var(--primary); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
 
-    .btn-login {
-      width: 100%; padding: 11px;
-      background: linear-gradient(135deg,#1a56db,#1e429f);
-      color: #fff; border: none; border-radius: 9px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: opacity .15s; margin-top: 6px;
-    }
-    .btn-login:hover { opacity: .9; }
-    .btn-login:active { opacity: .8; }
+  /* CONTENT */
+  .content { flex: 1; padding: 28px 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
 
-    .login-footer { margin-top: 22px; font-size: 11px; color: #9ca3af; }
+  /* BADGE */
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; border-radius: 10px;
+    font-size: 11px; font-weight: 700; padding: 0 6px;
+  }
+  .badge-danger { background: #fee2e2; color: var(--danger); }
+  .badge-warning { background: #fef9c3; color: #92400e; }
+  .badge-success { background: #d1fae5; color: var(--success); }
+  .badge-primary { background: #dbeafe; color: var(--primary); }
 
-    /* ===== HEADER ===== */
-    .header {
-      background: linear-gradient(135deg, #1a56db 0%, #1e429f 100%);
-      color: #fff; padding: 18px 24px;
-      display: flex; align-items: center; gap: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.18);
-    }
-    .header-icon { width: 44px; height: 44px; background: rgba(255,255,255,.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-    .header-text h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
-    .header-text p  { font-size: 12px; opacity: .8; margin-top: 2px; }
-    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    .header-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 4px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
-    .dot { width: 7px; height: 7px; background: #6ee7b7; border-radius: 50%; }
-    .btn-logout { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
-    .btn-logout:hover { background: rgba(255,255,255,.25); }
+  /* RELATÓRIO TAB */
+  .report-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+  }
+  .report-header h2 { font-size: 20px; color: var(--primary); font-weight: 700; }
+  .report-meta { font-size: 13px; color: var(--muted); }
+  .report-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 28px;
+  }
+  .stat-card {
+    background: white; border-radius: var(--radius); padding: 16px 20px;
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .stat-card .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .stat-value { font-size: 26px; font-weight: 800; color: var(--primary); }
+  .stat-card .stat-sub { font-size: 11px; color: var(--muted); }
 
-    /* ===== TABS ===== */
-    .tabs { background: #fff; border-bottom: 2px solid #e2e8f0; display: flex; padding: 0 24px; gap: 4px; }
-    .tab-btn { padding: 12px 18px; border: none; background: transparent; font-size: 14px; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; }
-    .tab-btn:hover { color: #1a56db; }
-    .tab-btn.active { color: #1a56db; border-bottom-color: #1a56db; font-weight: 600; }
+  /* CATEGORY SECTION */
+  .cat-section { margin-bottom: 32px; }
+  .cat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px; border-radius: 10px 10px 0 0;
+    font-weight: 700; font-size: 15px; cursor: pointer;
+    user-select: none;
+  }
+  .cat-header .cat-count {
+    margin-left: auto; font-size: 12px; font-weight: 600;
+    padding: 2px 10px; border-radius: 12px; opacity: 0.85;
+  }
+  .cat-gestao { background: #1a5276; color: white; }
+  .cat-gestao .cat-count { background: rgba(255,255,255,0.25); color: white; }
+  .cat-medicos { background: #148f77; color: white; }
+  .cat-medicos .cat-count { background: rgba(255,255,255,0.25); color: white; }
+  .cat-ambulatorial { background: #7d6608; color: white; }
+  .cat-ambulatorial .cat-count { background: rgba(255,255,255,0.25); color: white; }
+  .cat-equipamentos { background: #4a235a; color: white; }
+  .cat-equipamentos .cat-count { background: rgba(255,255,255,0.25); color: white; }
 
-    /* ===== CONTENT ===== */
-    .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+  /* PREGÕES TAB CATEGORIES */
+  .cat-p-equipamentos { background: #4e342e; color: white; }
+  .cat-p-equipamentos .cat-count { background: rgba(255,255,255,0.25); color: white; }
+  .cat-p-medicos { background: #004d40; color: white; }
+  .cat-p-medicos .cat-count { background: rgba(255,255,255,0.25); color: white; }
+  .cat-p-ambulancias { background: #b71c1c; color: white; }
+  .cat-p-ambulancias .cat-count { background: rgba(255,255,255,0.25); color: white; }
+  .status-suspended { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px; background: #ffccbc; color: #bf360c; flex-shrink: 0; }
+  .status-closed { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px; background: #e0e0e0; color: #424242; flex-shrink: 0; }
 
-    /* ===== STATS BAR ===== */
-    .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
-    .stat-card { background: #fff; border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.07); border-left: 4px solid; }
-    .stat-card.blue   { border-left-color: #1a56db; }
-    .stat-card.green  { border-left-color: #059669; }
-    .stat-card.purple { border-left-color: #7c3aed; }
-    .stat-card.orange { border-left-color: #d97706; }
-    .stat-card .num { font-size: 26px; font-weight: 700; line-height: 1; }
-    .stat-card .lbl { font-size: 12px; color: #64748b; margin-top: 4px; }
+  .licit-list { border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; }
 
-    /* ===== SECTION ===== */
-    .section-title { font-size: 15px; font-weight: 700; color: #374151; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-    .section-title .pill { font-size: 11px; font-weight: 600; background: #e0e7ff; color: #3730a3; border-radius: 12px; padding: 2px 8px; }
+  /* LICITAÇÃO CARD */
+  .licit-card {
+    background: white; padding: 18px 20px;
+    border-bottom: 1px solid var(--border); display: flex;
+    align-items: flex-start; gap: 16px; transition: background 0.15s;
+  }
+  .licit-card:last-child { border-bottom: none; }
+  .licit-card:hover { background: #f8fafc; }
 
-    /* ===== PORTAL CARDS ===== */
-    .portals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-bottom: 28px; }
-    .portal-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; transition: box-shadow .15s, transform .15s; }
-    .portal-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); transform: translateY(-1px); }
-    .portal-card-header { padding: 14px 16px 10px; display: flex; align-items: flex-start; gap: 10px; }
-    .portal-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-    .portal-info h3 { font-size: 14px; font-weight: 700; color: #111827; }
-    .portal-info p  { font-size: 12px; color: #6b7280; margin-top: 3px; line-height: 1.4; }
-    .portal-card-footer { padding: 10px 16px 14px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f3f4f6; }
-    .badge-type { font-size: 10px; font-weight: 600; border-radius: 10px; padding: 2px 8px; text-transform: uppercase; letter-spacing: .3px; }
-    .badge-federal   { background: #dbeafe; color: #1e40af; }
-    .badge-estadual  { background: #d1fae5; color: #065f46; }
-    .badge-plataforma{ background: #ede9fe; color: #5b21b6; }
-    .badge-agregador { background: #fef3c7; color: #92400e; }
-    .badge-saude     { background: #fce7f3; color: #9d174d; }
-    .btn-search { margin-left: auto; background: #1a56db; color: #fff; border: none; border-radius: 7px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: background .15s; }
-    .btn-search:hover { background: #1e429f; }
+  .urgency-bar {
+    width: 5px; border-radius: 3px; align-self: stretch; flex-shrink: 0; min-height: 60px;
+  }
+  .urgency-red { background: var(--danger); }
+  .urgency-yellow { background: var(--warning); }
+  .urgency-green { background: var(--success); }
 
-    /* ===== CONFIG ===== */
-    .config-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 22px; margin-bottom: 20px; }
-    .config-card h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .config-card p.hint { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
-    .keywords-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-    .keyword-tag { background: #e0e7ff; color: #3730a3; border-radius: 20px; padding: 5px 12px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-    .keyword-tag button { background: none; border: none; cursor: pointer; color: #6d28d9; font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
-    .keyword-tag button:hover { color: #dc2626; }
-    .add-keyword-row { display: flex; gap: 8px; }
-    .add-keyword-row input { flex: 1; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; transition: border-color .15s; }
-    .add-keyword-row input:focus { border-color: #1a56db; }
-    .btn-add { background: #1a56db; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .btn-add:hover { background: #1e429f; }
+  .licit-body { flex: 1; min-width: 0; }
+  .licit-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .licit-num { font-size: 12px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+  .urgency-pill {
+    font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px; flex-shrink: 0;
+  }
+  .pill-red { background: #fee2e2; color: var(--danger); }
+  .pill-yellow { background: #fef9c3; color: #92400e; }
+  .pill-green { background: #d1fae5; color: var(--success); }
+  .os-pill { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px; background: #fde68a; color: #78350f; flex-shrink: 0; }
 
-    /* ===== TABLE ===== */
-    .search-links-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .search-links-table th { background: #f8fafc; padding: 10px 14px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e2e8f0; }
-    .search-links-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
-    .search-links-table tr:hover td { background: #f8fafc; }
-    .search-links-table a { color: #1a56db; text-decoration: none; font-weight: 500; }
-    .search-links-table a:hover { text-decoration: underline; }
+  .licit-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+  .licit-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .licit-meta span { display: flex; align-items: center; gap: 4px; }
+  .licit-meta strong { color: var(--text); }
 
-    /* ===== STEPS ===== */
-    .steps { display: flex; flex-direction: column; gap: 16px; }
-    .step { background: #fff; border-radius: 10px; padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
-    .step-num { width: 32px; height: 32px; border-radius: 50%; background: #1a56db; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
-    .step-body h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-    .step-body p  { font-size: 13px; color: #6b7280; line-height: 1.6; }
-    .step-body code { background: #f3f4f6; border-radius: 4px; padding: 1px 6px; font-size: 12px; color: #1e429f; }
-    .alert-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 18px; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #1e40af; margin-top: 20px; }
-    .alert-box .icon { font-size: 18px; flex-shrink: 0; }
+  .licit-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn-edital {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--primary); color: white; padding: 7px 14px;
+    border-radius: 7px; font-size: 12px; font-weight: 600;
+    text-decoration: none; transition: background 0.2s;
+  }
+  .btn-edital:hover { background: var(--primary-light); }
+  .btn-pncp {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #e8f4f8; color: var(--primary); padding: 7px 14px;
+    border-radius: 7px; font-size: 12px; font-weight: 600;
+    text-decoration: none; transition: background 0.2s;
+  }
+  .btn-pncp:hover { background: #cce5f0; }
 
-    @media (max-width: 700px) {
-      .stats-bar { grid-template-columns: repeat(2, 1fr); }
-      .portals-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+  .licit-compat {
+    font-size: 11px; color: var(--accent); font-weight: 500;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* SEARCH TAB */
+  .search-section { background: white; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+  .search-section h3 { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 13px; outline: none; transition: border 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary-light); }
+  .keyword-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .keyword-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #dbeafe; color: var(--primary); padding: 4px 12px;
+    border-radius: 16px; font-size: 12px; font-weight: 500;
+  }
+  .keyword-tag button { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 14px; line-height: 1; padding: 0; }
+  .action-btn {
+    padding: 11px 24px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: all 0.2s;
+  }
+  .action-btn-primary { background: var(--primary); color: white; }
+  .action-btn-primary:hover { background: var(--primary-light); }
+  .action-btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+  .action-btn-secondary:hover { background: var(--border); }
+  .portal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .portal-item { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+  .portal-item input { width: 16px; height: 16px; cursor: pointer; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+    .report-stats { grid-template-columns: 1fr 1fr; }
+    .licit-card { flex-direction: column; gap: 10px; }
+    .urgency-bar { width: 100%; height: 4px; min-height: unset; }
+  }
+</style>
 </head>
 <body>
 
-<!-- ===== LOGIN OVERLAY ===== -->
-<div id="login-overlay">
+<!-- LOGIN -->
+<div id="login-screen">
   <div class="login-box">
     <div class="login-logo">🏥</div>
-    <h1>Monitor de Licitações</h1>
-    <p>GMSS — Acesso restrito</p>
-
-    <div class="login-field">
-      <label>Usuário</label>
-      <input type="text" id="login-user" placeholder="Digite seu usuário" autocomplete="username" />
-    </div>
-    <div class="login-field">
-      <label>Senha</label>
-      <input type="password" id="login-pass" placeholder="Digite sua senha" autocomplete="current-password" />
-    </div>
-
-    <div class="login-error" id="login-error">Usuário ou senha incorretos. Tente novamente.</div>
-
-    <button class="btn-login" onclick="doLogin()">Entrar</button>
-
-    <div class="login-footer">Uso exclusivo GMSS &amp; assistentes autorizados</div>
+    <h1>GMSS Licitações</h1>
+    <p>Monitor de oportunidades públicas</p>
+    <input type="text" id="login-user" placeholder="Usuário" autocomplete="username"/>
+    <input type="password" id="login-pass" placeholder="Senha" autocomplete="current-password"/>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
   </div>
 </div>
 
-<!-- ===== HEADER ===== -->
-<div class="header">
-  <div class="header-icon">🏥</div>
-  <div class="header-text">
-    <h1>Monitor de Licitações – GMSS</h1>
-    <p>Monitoramento nacional de licitações na área de saúde</p>
-  </div>
-  <div class="header-right">
-    <div class="header-badge">
-      <span class="dot"></span>
-      <span id="last-update">Carregando...</span>
-    </div>
-    <button class="btn-logout" onclick="doLogout()">Sair</button>
-  </div>
-</div>
+<!-- APP -->
+<div id="app" style="display:none; flex-direction:column;">
 
-<!-- ===== TABS ===== -->
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('portais', this)">📋 Portais de Licitação</button>
-  <button class="tab-btn" onclick="switchTab('config', this)">⚙️ Configurar Busca</button>
-  <button class="tab-btn" onclick="switchTab('links', this)">🔗 Links de Busca Rápida</button>
-  <button class="tab-btn" onclick="switchTab('ajuda', this)">📖 Como Funciona</button>
-</div>
-
-<div class="content">
-
-  <!-- ===== TAB PORTAIS ===== -->
-  <div id="tab-portais" class="tab-panel active">
-    <div class="stats-bar">
-      <div class="stat-card blue"><div class="num">18</div><div class="lbl">Portais mapeados</div></div>
-      <div class="stat-card green"><div class="num">3</div><div class="lbl">Portais federais</div></div>
-      <div class="stat-card purple"><div class="num">7</div><div class="lbl">Plataformas nacionais</div></div>
-      <div class="stat-card orange"><div class="num" id="kw-count">9</div><div class="lbl">Termos configurados</div></div>
-    </div>
-
-    <div class="section-title">🇧🇷 Portais Federais <span class="pill">Obrigatório</span></div>
-    <div class="portals-grid">
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#dbeafe">🏛️</div><div class="portal-info"><h3>PNCP – Portal Nacional de Contratações Públicas</h3><p>Central oficial de todas as contratações públicas do Brasil. Principal portal desde a Lei 14.133/21.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-federal">Federal</span><a href="https://pncp.gov.br/app/editais" target="_blank" class="btn-search">🔍 Buscar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🛒</div><div class="portal-info"><h3>Compras.gov.br</h3><p>Portal de compras do Governo Federal. Pregões, dispensas e inexigibilidades de órgãos federais.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-federal">Federal</span><a href="https://www.gov.br/compras/pt-br" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#fce7f3">📊</div><div class="portal-info"><h3>Portal da Transparência Federal</h3><p>Consulta pública a licitações e contratos do Governo Federal com filtros por área e valor.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-federal">Federal</span><a href="https://portaldatransparencia.gov.br/licitacoes" target="_blank" class="btn-search">🔍 Buscar</a></div>
-      </div>
-    </div>
-
-    <div class="section-title">🏢 Plataformas de Pregão Eletrônico <span class="pill">Alta cobertura</span></div>
-    <div class="portals-grid">
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">🛒</div><div class="portal-info"><h3>Portal de Compras Públicas</h3><p>Um dos maiores marketplaces de licitações do Brasil. Cobre municípios, estados e federação.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://www.portaldecompraspublicas.com.br/processos/" target="_blank" class="btn-search">🔍 Buscar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">📦</div><div class="portal-info"><h3>BLL – Bolsa de Licitações do Brasil</h3><p>Plataforma nacional que conecta fornecedores a órgãos públicos de todas as esferas.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://bll.org.br/licitacao" target="_blank" class="btn-search">🔍 Buscar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">⚡</div><div class="portal-info"><h3>Licitanet</h3><p>Pregão eletrônico utilizado por centenas de municípios e órgãos estaduais em todo o Brasil.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://www.licitanet.com.br/licita-licitacoes" target="_blank" class="btn-search">🔍 Buscar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">🔌</div><div class="portal-info"><h3>eLicitações</h3><p>Plataforma de pregão eletrônico com foco em municípios e consórcios públicos.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://elicitacoes.com.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#ede9fe">🖥️</div><div class="portal-info"><h3>ComprasNet (legado)</h3><p>Sistema histórico do Governo Federal. Mantém acesso a processos anteriores a 2021.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-plataforma">Plataforma</span><a href="https://www.comprasnet.gov.br/seguro/loginPortal.asp" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-    </div>
-
-    <div class="section-title">🔔 Agregadores e Alertas <span class="pill">Recomendado</span></div>
-    <div class="portals-grid">
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#fef3c7">🔔</div><div class="portal-info"><h3>Alerta Licitação</h3><p>Agrega licitações de dezenas de portais. Permite configurar alertas por CNAE e palavra-chave.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-agregador">Agregador</span><a href="https://alertalicitacao.com.br/" target="_blank" class="btn-search">🔍 Buscar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#fef3c7">📡</div><div class="portal-info"><h3>Licitei</h3><p>Plataforma de monitoramento com integração a 13+ portais. Disputa e gestão integrada.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-agregador">Agregador</span><a href="https://www.licitei.com.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#fef3c7">📰</div><div class="portal-info"><h3>Con-Licitação</h3><p>Portal de conteúdo e monitoramento de licitações com busca nacional integrada.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-agregador">Agregador</span><a href="https://conlicitacao.com.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-    </div>
-
-    <div class="section-title">🗺️ Portais Estaduais Principais</div>
-    <div class="portals-grid">
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🏙️</div><div class="portal-info"><h3>BEC/SP – Bolsa Eletrônica de Compras (São Paulo)</h3><p>Portal de licitações do Estado de SP. Um dos maiores em volume do país.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual SP</span><a href="https://www.bec.sp.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">⛰️</div><div class="portal-info"><h3>Compras MG (Minas Gerais)</h3><p>Portal de compras e licitações do Estado de Minas Gerais.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual MG</span><a href="https://www.compras.mg.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🌊</div><div class="portal-info"><h3>SIGA-RJ (Rio de Janeiro)</h3><p>Sistema integrado de licitações e contratos do Estado do RJ.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual RJ</span><a href="https://www.compras.rj.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🌲</div><div class="portal-info"><h3>Compras PR (Paraná)</h3><p>Portal de licitações eletrônicas do Estado do Paraná.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual PR</span><a href="https://www.compraspr.pr.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#d1fae5">🌾</div><div class="portal-info"><h3>Compras RS (Rio Grande do Sul)</h3><p>Portal de compras governamentais do Estado do RS.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-estadual">Estadual RS</span><a href="https://www.compras.rs.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-    </div>
-
-    <div class="section-title">💊 Portais Específicos de Saúde <span class="pill">Foco GMSS</span></div>
-    <div class="portals-grid">
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#fce7f3">💉</div><div class="portal-info"><h3>Fundo Nacional de Saúde (FNS)</h3><p>Licitações do Ministério da Saúde. Equipamentos hospitalares, ambulâncias e serviços médicos.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-saude">Saúde</span><a href="https://fns.saude.gov.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-      <div class="portal-card">
-        <div class="portal-card-header"><div class="portal-icon" style="background:#fce7f3">🚑</div><div class="portal-info"><h3>CONASS – Conselho Nacional de Secretários de Saúde</h3><p>Referência nacional para licitações em saúde pública estadual.</p></div></div>
-        <div class="portal-card-footer"><span class="badge-type badge-saude">Saúde</span><a href="https://www.conass.org.br/" target="_blank" class="btn-search">🔍 Acessar</a></div>
-      </div>
-    </div>
+  <div class="header">
+    <span class="header-logo">🏥</span>
+    <h1>GMSS – Monitor de Licitações</h1>
+    <span class="header-sub" id="current-date"></span>
+    <button class="logout-btn" onclick="doLogout()">Sair</button>
   </div>
 
-  <!-- ===== TAB CONFIG ===== -->
-  <div id="tab-config" class="tab-panel">
-    <div class="config-card">
-      <h2>⚙️ Palavras-chave de Busca GMSS</h2>
-      <p class="hint">Configure os termos usados nas buscas diárias automáticas. Representam os serviços prestados pela GMSS.</p>
-      <div class="keywords-list" id="keywords-container"></div>
-      <div class="add-keyword-row">
-        <input type="text" id="new-keyword" placeholder="Ex: UTI móvel, home care, serviço de saúde..." maxlength="60" />
-        <button class="btn-add" onclick="addKeyword()">+ Adicionar</button>
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="showTab('relatorio', this)">
+      📋 Relatório do Dia
+      <span class="badge badge-danger" id="badge-relatorio">18</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('busca', this)">
+      🔍 Configurar Busca
+    </button>
+    <button class="tab-btn" onclick="showTab('portais', this)">
+      🌐 Portais
+    </button>
+    <button class="tab-btn" onclick="showTab('pregoes', this)">
+      🏆 Pregões para Concorrer
+      <span class="badge badge-primary" id="badge-pregoes">9</span>
+    </button>
+  </div>
+
+  <div class="content">
+
+    <!-- ==================== ABA RELATÓRIO ==================== -->
+    <div id="tab-relatorio" class="tab-panel active">
+
+      <div class="report-header">
+        <div>
+          <h2>📋 Relatório Diário de Licitações</h2>
+          <div class="report-meta" id="report-date-label"></div>
+        </div>
+        <button class="action-btn action-btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+
+      <!-- STATS -->
+      <div class="report-stats">
+        <div class="stat-card">
+          <div class="stat-label">Total encontradas</div>
+          <div class="stat-value" style="color:#1a5276">18</div>
+          <div class="stat-sub">oportunidades compatíveis</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🔴 Alta urgência</div>
+          <div class="stat-value" style="color:#c0392b">7</div>
+          <div class="stat-sub">abertura recente / credenciamento</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🟡 Atenção</div>
+          <div class="stat-value" style="color:#b7950b">6</div>
+          <div class="stat-sub">em avaliação de propostas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🟢 Prazo longo</div>
+          <div class="stat-value" style="color:#1e8449">5</div>
+          <div class="stat-sub">credenciamentos contínuos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">💰 Valor estimado total</div>
+          <div class="stat-value" style="color:#148f77; font-size:18px">R$ 40+ mi</div>
+          <div class="stat-sub">em contratos identificados</div>
+        </div>
+      </div>
+
+      <!-- ===== CATEGORIA 1: GESTÃO HOSPITALAR ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-gestao" onclick="toggleCat('gestao')">
+          🏥 Gestão Hospitalar (UPA / Pronto Socorro / Hospital)
+          <span class="cat-count">3 licitações</span>
+        </div>
+        <div class="licit-list" id="cat-gestao">
+
+          <!-- 1 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#01</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 21/05</span>
+                <span class="os-pill">⚠️ Requer OS</span>
+              </div>
+              <div class="licit-title">Gestão, Operacionalização e Execução da UPA 24h Dr. Nelson Antônio Hirata</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Registro/SP</strong> – Município de Registro</span>
+                <span>📅 Abertura: <strong>21/05/2026</strong></span>
+                <span>💰 <strong>R$ 17.945.023,00</strong></span>
+                <span>📄 Chamamento Público 60/2026 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Pronto atendimento / Gestão hospitalar / Serviços de saúde 24h</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-45685872000179-1-000117-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/45685872000179/2026/117" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#02</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 22/05</span>
+                <span class="os-pill">⚠️ Requer OS</span>
+              </div>
+              <div class="licit-title">Gestão do Complexo Hospitalar Municipal de Bertioga — UTI Adulto + Enfermaria + Pronto Socorro + Pronto Atendimento Boraceia + SADU + SAMU 24h</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Bertioga/SP</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura envelopes: <strong>22/05/2026</strong></span>
+                <span>💰 Contrato de gestão (grande porte)</span>
+                <span>📄 Chamamento Público 1/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão hospitalar completa / UTI / Pronto socorro / SAMU</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/DOU-6952ccc1709e14509057" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://www.bertioga.sp.gov.br/licitacao" target="_blank">Portal</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#03</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 22/05</span>
+                <span class="os-pill">⚠️ Requer OS</span>
+              </div>
+              <div class="licit-title">Gestão, Operacionalização e Execução dos Serviços de Saúde no Hospital Municipal Hugo Miranda</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Paraty/RJ</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura: <strong>22/05/2026</strong></span>
+                <span>💰 A definir no edital</span>
+                <span>📄 Chamamento Público 001/2026 – FMS</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão hospitalar / Serviços médicos</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PRT-RJ-4142" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== CATEGORIA 2: SERVIÇOS MÉDICOS / MÃO DE OBRA ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-medicos" onclick="toggleCat('medicos')">
+          👨‍⚕️ Serviços Médicos / Gestão de Mão de Obra
+          <span class="cat-count">9 licitações</span>
+        </div>
+        <div class="licit-list" id="cat-medicos">
+
+          <!-- 1 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#04</span>
+                <span class="urgency-pill pill-red">🔴 Aberta 19/05</span>
+              </div>
+              <div class="licit-title">Prestação de Serviços Médicos Especializados e Plantonistas – Fundo Municipal de Saúde</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Caraúbas/PB</strong> – FMS Caraúbas</span>
+                <span>📅 Abertura: <strong>19/05/2026</strong></span>
+                <span>💰 <strong>R$ 629.675,00</strong></span>
+                <span>📄 Credenciamento 10002/2026 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão de mão de obra médica / Consultas especializadas</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-01612638000146-1-000024-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/01612638000146/2026/24" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#05</span>
+                <span class="urgency-pill pill-red">🔴 Aberta 19/05</span>
+              </div>
+              <div class="licit-title">Credenciamento de Pessoas Físicas e/ou Jurídicas para Plantões Médicos</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Lagoa Seca/PB</strong> – Secretaria Municipal de Saúde</span>
+                <span>📅 Abertura: <strong>19/05/2026</strong></span>
+                <span>💰 <strong>R$ 4.572.160,00</strong></span>
+                <span>📄 Chamamento Público CD008/2025 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão de mão de obra médica / Pronto atendimento</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-08997611000168-1-000095-2025" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/08997611000168/2025/95" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#06</span>
+                <span class="urgency-pill pill-red">🔴 Aberta 20/05</span>
+              </div>
+              <div class="licit-title">Chamamento Público para Credenciamento de PJ — Prestação de Serviços em Saúde e Serviços Médicos</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Santana dos Garrotes/PB</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura: <strong>20/05/2026</strong></span>
+                <span>💰 <strong>R$ 2.185.475,00</strong></span>
+                <span>📄 Credenciamento 00003/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão de mão de obra médica / Consultas ambulatoriais</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PB-2513604-11-00003-2026" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#07</span>
+                <span class="urgency-pill pill-red">🔴 Aberta 21/05</span>
+              </div>
+              <div class="licit-title">Credenciamento de Serviços Complementares de Saúde — Médicos Plantonistas, Procedimentos Cirúrgicos, Médicos PSF</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Jaguaribe/CE</strong> – Secretaria Municipal de Saúde</span>
+                <span>📅 Abertura: <strong>21/05/2026</strong></span>
+                <span>💰 A definir no edital</span>
+                <span>📄 Credenciamento Público nº 2/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Mão de obra médica / Pronto atendimento / Ambulatorial</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/DOU-861a04138b4fdaddbbe2" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#08</span>
+                <span class="urgency-pill pill-red">🔴 Aberta 21/05</span>
+              </div>
+              <div class="licit-title">Contratação de Serviços de Atenção à Saúde do Trabalhador com Dedicação Exclusiva de Mão de Obra — FIOCRUZ</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Rio de Janeiro/RJ</strong> – Fundação Oswaldo Cruz</span>
+                <span>📅 Abertura: <strong>21/05/2026</strong></span>
+                <span>💰 <strong>R$ 10.767.965,00</strong></span>
+                <span>📄 Pregão Eletrônico 90012/2026 – ComprasNet (UASG 254420)</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão de mão de obra médica / Serviços de saúde</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-33781055000135-1-000579-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://compras.gov.br/consultas/licitacoes/5-resultado-pesquisa-licitacoes.html" target="_blank">ComprasNet</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#09</span>
+                <span class="urgency-pill pill-red">🔴 Aberta 21/05</span>
+              </div>
+              <div class="licit-title">Credenciamento de Empresa Especializada em Saúde para Mutirão de Especialidades Médicas e Ortopedia (OCI)</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Paulista/PE</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura: <strong>21/05/2026</strong></span>
+                <span>💰 <strong>R$ 1.035.213,00</strong></span>
+                <span>📄 Credenciamento Público nº 1/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Serviços médicos especializados / Gestão saúde</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/DOU-4394bb5a58405766c656" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#10</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 22/05</span>
+              </div>
+              <div class="licit-title">Contratação de Empresa para Prestação de Serviços Médicos — Plantão Horário Estendido + Estratégia Saúde da Família (ESF)</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Boa Vista do Incra/RS</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura: <strong>22/05/2026</strong></span>
+                <span>💰 <strong>R$ 440.580,00</strong></span>
+                <span>📄 Pregão Eletrônico 9/2026 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão de mão de obra médica / Consultas / Pronto atendimento</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-04215199000126-1-000103-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/04215199000126/2026/103" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#11</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 20/05</span>
+              </div>
+              <div class="licit-title">Serviços Terceirizados de Gerenciamento/Assistência de Saúde — Home Care: Enfermagem 24h, Fisioterapia, Fonoaudiologia e Terapia Ocupacional</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>São José do Rio Preto/SP</strong> – Secretaria de Estado da Saúde</span>
+                <span>📅 Abertura: <strong>20/05/2026</strong></span>
+                <span>💰 A definir</span>
+                <span>📄 Pregão Eletrônico 90123/2026 – ComprasNet (UASG 90127)</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão de mão de obra médica / Serviços de saúde</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-46374500000194-1-003250-2026" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 9 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#12</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 21/05</span>
+              </div>
+              <div class="licit-title">Credenciamento de Profissionais da Saúde (PF ou PJ) para Serviços Complementares à Rede Municipal de Saúde</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Ipueiras/TO</strong> – Fundo Municipal de Saúde</span>
+                <span>📅 Abertura: <strong>21/05/2026</strong></span>
+                <span>💰 <strong>R$ 292.148,00</strong></span>
+                <span>📄 Chamamento Público 002 – FMS/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Consultas ambulatoriais / Mão de obra médica</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-01613094000137-1-000006-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/01613094000137/2026/6" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== CATEGORIA 3: AMBULATORIAL / ESPECIALIDADES ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-ambulatorial" onclick="toggleCat('ambulatorial')">
+          🩺 Consultas Ambulatoriais / Especialidades / Saúde Itinerante
+          <span class="cat-count">4 licitações</span>
+        </div>
+        <div class="licit-list" id="cat-ambulatorial">
+
+          <!-- 1 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-green"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#13</span>
+                <span class="urgency-pill pill-green">🟢 Credenciamento contínuo</span>
+              </div>
+              <div class="licit-title">Credenciamento para Prestação de Serviços de Saúde Especializados — Consultas, Exames, Procedimentos, Cirurgias e Serviços Ambulatoriais e Hospitalares</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Salinas/MG</strong> – CIMES (Consórcio Intermunicipal de Saúde)</span>
+                <span>📅 Abertura: <strong>20/05/2026</strong></span>
+                <span>💰 <strong>R$ 57.764,00</strong></span>
+                <span>📄 Chamamento Público 016/2025 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Consultas ambulatoriais / Serviços médicos especializados</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-07333598000180-1-000016-2025" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/07333598000180/2025/16" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-green"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#14</span>
+                <span class="urgency-pill pill-green">🟢 Credenciamento contínuo</span>
+              </div>
+              <div class="licit-title">Credenciamento de PJ para Prestação de Serviços Especializados em Saúde em Regime de Mutirão — Procedimentos Oftalmológicos (incluindo mão de obra, equipamentos e insumos)</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Nossa Senhora de Nazaré/PI</strong> – Secretaria Municipal de Saúde</span>
+                <span>📅 Abertura: <strong>19/05/2026</strong></span>
+                <span>💰 <strong>R$ 1.527.502,00</strong></span>
+                <span>📄 Chamamento Público 0001/2026 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Serviços médicos especializados / Mão de obra + equipamentos</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-01612592000165-1-000008-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/01612592000165/2026/8" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-green"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#15</span>
+                <span class="urgency-pill pill-green">🟢 Credenciamento contínuo</span>
+              </div>
+              <div class="licit-title">Credenciamento de PJ para Prestação de Serviços de Exames de Tomografia Computadorizada</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Camboriú/SC</strong> – Fundo Municipal de Saúde</span>
+                <span>📅 Abertura: <strong>19/05/2026</strong></span>
+                <span>💰 <strong>R$ 581.324,00</strong></span>
+                <span>📄 Chamamento Público PRI 9/2025 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Serviços de diagnóstico por imagem / Equipamentos</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-11312860000187-1-000037-2025" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/11312860000187/2025/37" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-green"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#16</span>
+                <span class="urgency-pill pill-green">🟢 Aberta</span>
+              </div>
+              <div class="licit-title">Contratação de Empresa para Prestação de Serviços Continuados de Saúde Itinerante — Saúde da Mulher</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Brasileira/PI</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura: <strong>21/05/2026</strong></span>
+                <span>💰 A definir no edital</span>
+                <span>📄 Pregão Eletrônico nº 010/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Serviços ambulatoriais móveis / Saúde da mulher</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/DOU-d8b0fe129c1c13e962ae" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5: Consultoria -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#17</span>
+                <span class="urgency-pill pill-yellow">🟡 Aberta 19/05</span>
+              </div>
+              <div class="licit-title">Contratação de Empresa Especializada para Consultoria em Gestão de Saúde Pública — Secretaria Municipal de Saúde</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Monte Alegre de Minas/MG</strong> – Município</span>
+                <span>📅 Abertura: <strong>19/05/2026</strong></span>
+                <span>💰 <strong>R$ 60.596,00</strong></span>
+                <span>📄 Pregão Eletrônico – Edital 052/2026 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Gestão em saúde / Consultoria</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-18431155000148-1-000052-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/18431155000148/2026/52" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== CATEGORIA 4: EQUIPAMENTOS ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-equipamentos" onclick="toggleCat('equipamentos')">
+          🔬 Equipamentos Hospitalares / Insumos
+          <span class="cat-count">1 licitação</span>
+        </div>
+        <div class="licit-list" id="cat-equipamentos">
+
+          <!-- 1 -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-green"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">#18</span>
+                <span class="urgency-pill pill-green">🟢 Aberta 22/05</span>
+              </div>
+              <div class="licit-title">Registro de Preços para Aquisição de Equipamentos, Aparelhos e Artigos de Uso Médico — Departamento de Reabilitação e Unidades de Atendimento Hospitalar</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Vale de São Domingos/MT</strong> – Secretaria Municipal de Saúde</span>
+                <span>📅 Abertura: <strong>22/05/2026</strong></span>
+                <span>💰 A definir no edital</span>
+                <span>📄 Pregão Eletrônico – Edital 07/2026 – PNCP</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Locação/fornecimento de equipamentos hospitalares</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://alertalicitacao.com.br/!licitacao/PNCP-04215993000170-1-000027-2026" target="_blank">🔗 Ver Edital</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais/04215993000170/2026/27" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- NOTA AMBULÂNCIAS -->
+      <div style="background:#fff8e1; border:1px solid #ffe082; border-radius:10px; padding:14px 18px; margin-top:8px; font-size:13px; color:#6d4c00;">
+        <strong>⚠️ Nota – Locação de Ambulâncias/Veículos:</strong>
+        Não foram localizadas licitações específicas de locação de ambulâncias com abertura nos últimos 2 dias nos portais consultados. Recomenda-se monitorar o <a href="https://pncp.gov.br/app/editais?q=ambul%C3%A2ncia" target="_blank" style="color:#1a5276; font-weight:600;">PNCP</a> e o <a href="https://alertalicitacao.com.br/" target="_blank" style="color:#1a5276; font-weight:600;">Alerta Licitação</a> com o filtro "ambulância" nos próximos dias.
+      </div>
+
+    </div><!-- /tab-relatorio -->
+
+
+    <!-- ==================== ABA CONFIGURAR BUSCA ==================== -->
+    <div id="tab-busca" class="tab-panel">
+      <div class="search-section">
+        <h3>🔍 Palavras-chave da Busca</h3>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Adicionar palavra-chave</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="kw-input" placeholder="ex: equipamento hospitalar" style="flex:1"
+                   onkeydown="if(event.key==='Enter') addKeyword()"/>
+            <button class="action-btn action-btn-primary" onclick="addKeyword()">Adicionar</button>
+          </div>
+        </div>
+        <div class="keyword-list" id="keyword-list"></div>
+      </div>
+
+      <div class="search-section">
+        <h3>🌐 Portais para Monitorar</h3>
+        <div class="portal-grid" id="portal-grid">
+          <label class="portal-item"><input type="checkbox" checked/> PNCP</label>
+          <label class="portal-item"><input type="checkbox" checked/> Alerta Licitação</label>
+          <label class="portal-item"><input type="checkbox" checked/> ComprasNet</label>
+          <label class="portal-item"><input type="checkbox" checked/> Portal Compras Públicas</label>
+          <label class="portal-item"><input type="checkbox" checked/> BLL Compras</label>
+          <label class="portal-item"><input type="checkbox"/> Licitaja</label>
+          <label class="portal-item"><input type="checkbox"/> TCE-CE</label>
+          <label class="portal-item"><input type="checkbox"/> BNC Compras</label>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="action-btn action-btn-primary" onclick="openPortals()">🚀 Abrir Portais com Busca</button>
+        <button class="action-btn action-btn-secondary" onclick="clearKeywords()">🗑️ Limpar palavras</button>
       </div>
     </div>
-    <div class="config-card">
-      <h2>📋 Termos configurados</h2>
-      <p class="hint">Baseado nos serviços da GMSS: locação de equipamentos hospitalares, gestão de mão de obra médica, consultas ambulatoriais, pronto socorro e locação de veículos/ambulâncias.</p>
-      <table class="search-links-table" style="margin-top:12px">
-        <thead><tr><th>#</th><th>Termo de busca</th><th>Categoria GMSS</th></tr></thead>
-        <tbody id="keywords-table"></tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- ===== TAB LINKS ===== -->
-  <div id="tab-links" class="tab-panel">
-    <div class="config-card">
-      <h2>🔗 Links de Busca Rápida por Portal</h2>
-      <p class="hint">Links gerados automaticamente com suas palavras-chave. Clique para buscar diretamente em cada portal.</p>
-    </div>
-    <div id="search-links-container"></div>
-  </div>
+    <!-- ==================== ABA PORTAIS ==================== -->
+    <div id="tab-portais" class="tab-panel">
+      <div class="search-section">
+        <h3>🌐 Acesso Rápido aos Portais</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:14px; margin-top:8px;">
+          <a class="btn-edital" href="https://pncp.gov.br/app/editais" target="_blank" style="justify-content:flex-start; padding:14px 18px; font-size:14px; border-radius:10px;">
+            🏛️ PNCP — Portal Nacional de Contratações
+          </a>
+          <a class="btn-edital" href="https://alertalicitacao.com.br/" target="_blank" style="justify-content:flex-start; padding:14px 18px; font-size:14px; border-radius:10px; background:#148f77;">
+            🔔 Alerta Licitação
+          </a>
+          <a class="btn-edital" href="https://www.comprasnet.gov.br/ConsultaLicitacoes/ConsLicitacaoDia.asp" target="_blank" style="justify-content:flex-start; padding:14px 18px; font-size:14px; border-radius:10px; background:#6c3483;">
+            🖥️ ComprasNet / Gov.br
+          </a>
+          <a class="btn-edital" href="https://www.portaldecompraspublicas.com.br" target="_blank" style="justify-content:flex-start; padding:14px 18px; font-size:14px; border-radius:10px; background:#1a5276;">
+            📂 Portal de Compras Públicas
+          </a>
+          <a class="btn-edital" href="https://bll.org.br/editais/" target="_blank" style="justify-content:flex-start; padding:14px 18px; font-size:14px; border-radius:10px; background:#1e8449;">
+            📋 BLL Compras
+          </a>
+          <a class="btn-edital" href="https://portaldatransparencia.gov.br/licitacoes/consulta" target="_blank" style="justify-content:flex-start; padding:14px 18px; font-size:14px; border-radius:10px; background:#922b21;">
+            💼 Portal da Transparência
+          </a>
+        </div>
+      </div>
 
-  <!-- ===== TAB AJUDA ===== -->
-  <div id="tab-ajuda" class="tab-panel">
-    <div class="config-card">
-      <h2>📖 Como funciona o monitoramento diário da GMSS</h2>
-      <p class="hint">O sistema funciona em dois níveis: este painel (acesso rápido a portais) + monitoramento automático diário via Claude.</p>
+      <div class="search-section">
+        <h3>🎯 Busca Direcionada por Objeto</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:10px;">
+          <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=equipamento+hospitalar&status=divulgado" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">🔬 Equipamento Hospitalar – PNCP</a>
+          <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=ambul%C3%A2ncia&status=divulgado" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">🚑 Ambulância – PNCP</a>
+          <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=servi%C3%A7os+m%C3%A9dicos&status=divulgado" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">👨‍⚕️ Serviços Médicos – PNCP</a>
+          <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=pronto+atendimento&status=divulgado" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">🏥 Pronto Atendimento – PNCP</a>
+          <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=gest%C3%A3o+hospitalar&status=divulgado" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">🏗️ Gestão Hospitalar – PNCP</a>
+          <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=UTI+m%C3%B3vel&status=divulgado" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">🚑 UTI Móvel – PNCP</a>
+          <a class="btn-pncp" href="https://alertalicitacao.com.br/!cnae/1223" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">📊 Gestão Saúde (CNAE 1223)</a>
+          <a class="btn-pncp" href="https://alertalicitacao.com.br/!cnae/735" target="_blank" style="padding:12px 16px; border-radius:8px; font-size:13px;">🔬 Equip. Médicos (CNAE 735)</a>
+        </div>
+      </div>
     </div>
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-body"><h3>Configure suas palavras-chave</h3><p>Na aba <strong>Configurar Busca</strong>, defina os termos que descrevem os serviços da GMSS. Ex: <code>equipamento hospitalar</code>, <code>ambulância</code>, <code>gestão saúde</code>.</p></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-body"><h3>Monitoramento diário automático</h3><p>Todo dia às <strong>08:00</strong>, o Claude pesquisa licitações nos portais principais e entrega um relatório no chat com urgência por prazo, valor estimado e link para o edital.</p></div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-body"><h3>Busca manual pelos portais</h3><p>Use a aba <strong>Portais</strong> para acessar qualquer portal com um clique. Use <strong>Links de Busca Rápida</strong> para links pré-configurados com seus termos em cada portal.</p></div></div>
-      <div class="step"><div class="step-num">4</div><div class="step-body"><h3>Personalização avançada</h3><p>Para afinar a busca diária, diga ao Claude: <code>"Filtrar apenas municípios de SP"</code> ou <code>"Apenas licitações acima de R$ 50.000"</code>.</p></div></div>
-      <div class="step"><div class="step-num">5</div><div class="step-body"><h3>Cadastro para participar</h3><p>Para disputar as licitações encontradas, a GMSS precisa de cadastro no <strong>SICAF</strong> (federal), <strong>PNCP</strong>, <strong>BLL</strong> e nos portais estaduais onde atua.</p></div></div>
-    </div>
-    <div class="alert-box"><span class="icon">ℹ️</span><div><strong>Monitoramento ativo!</strong><br>Busca automática agendada para todos os dias às 08:00. Para alterar, basta pedir ao Claude na conversa.</div></div>
-  </div>
 
-</div><!-- /content -->
+    <!-- ==================== ABA PREGÕES ==================== -->
+    <div id="tab-pregoes" class="tab-panel">
+
+      <div class="report-header">
+        <div>
+          <h2>🏆 Pregões Eletrônicos para Concorrer</h2>
+          <div class="report-meta">Busca por Pregão Eletrônico — mesmos objetos do Relatório do Dia · 27/05/2026 · 9 pregões identificados</div>
+        </div>
+      </div>
+
+      <!-- AVISO -->
+      <div style="background:#e8f4f8; border:1px solid #90caf9; border-radius:10px; padding:14px 18px; margin-bottom:24px; font-size:13px; color:#0d47a1;">
+        <strong>ℹ️ Sobre esta aba:</strong> Pregão Eletrônico é a modalidade mais competitiva para contratação de serviços e equipamentos de saúde. Itens identificados nos portais PNCP, sites de prefeituras e DOU. <strong>Nota:</strong> Gestão Hospitalar (UPA, hospital) normalmente usa Chamamento Público — veja a aba 📋 Relatório do Dia para essas 3 oportunidades.
+      </div>
+
+      <!-- STATS -->
+      <div class="report-stats" style="margin-bottom:28px;">
+        <div class="stat-card">
+          <div class="stat-label">Total pregões</div>
+          <div class="stat-value" style="color:#1a5276">9</div>
+          <div class="stat-sub">identificados nesta busca</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🟢 Abertura futura</div>
+          <div class="stat-value" style="color:#1e8449">1</div>
+          <div class="stat-sub">prazo aberto — prepare proposta!</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🟡 Recentes</div>
+          <div class="stat-value" style="color:#b7950b">5</div>
+          <div class="stat-sub">monitorar nova edição</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🔴 Encerrado/Suspenso</div>
+          <div class="stat-value" style="color:#c0392b">3</div>
+          <div class="stat-sub">acompanhar retomada</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">💰 Maior contrato</div>
+          <div class="stat-value" style="color:#148f77; font-size:18px">R$ 33,5 mi</div>
+          <div class="stat-sub">locação equip. hospitalares</div>
+        </div>
+      </div>
+
+      <!-- ===== P-CAT 1: EQUIPAMENTOS ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-p-equipamentos" onclick="toggleCat('p-equipamentos')">
+          🔬 Equipamentos Hospitalares / Locação com Manutenção
+          <span class="cat-count">3 pregões</span>
+        </div>
+        <div class="licit-list" id="cat-p-equipamentos">
+
+          <!-- P1: Hospital Ophir Loyola -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P1</span>
+                <span class="urgency-pill pill-yellow">🟡 PE 90046/2025</span>
+              </div>
+              <div class="licit-title">Locação de Equipamentos Médico-Hospitalares com Manutenção Preventiva e Corretiva</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Belém/PA</strong> – Hospital Ophir Loyola (HOL / SESPA)</span>
+                <span>💰 <strong>R$ 33.569.242,56</strong></span>
+                <span>📄 Pregão Eletrônico 90046/2025 – SESPA</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Locação de equipamentos hospitalares — maior contrato — monitorar edições 2026</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://pncp.gov.br/app/editais?q=ophir+loyola+locacao+equipamentos&status=todos" target="_blank">🔗 Buscar no PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- P2: CIRAU/RS -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P2</span>
+                <span class="urgency-pill pill-yellow">🟡 Retificado 04/05/2026</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico Nº 006/2026 — Produtos, Materiais e Equipamentos Hospitalares e Ambulatoriais</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Erechim/RS</strong> – CIRAU (Consórcio Intermunicipal da Região do Alto Uruguai)</span>
+                <span>💰 <strong>R$ 14.695.899,47</strong></span>
+                <span>📅 Retificado: <strong>04/05/2026</strong></span>
+                <span>📄 Pregão Eletrônico 006/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Fornecimento/locação de equipamentos hospitalares e ambulatoriais</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://www.cirau.com.br/pregao-eletronico-no-001-2026-produtos-materiais-e-equipamentos-hospitalares-e-ambulatoriais/" target="_blank">🔗 Ver Edital (CIRAU)</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=cirau+equipamentos+hospitalares" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- P3: Jaguariúna -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P3</span>
+                <span class="urgency-pill pill-red">🔴 Sessão 22/01/2026</span>
+                <span class="status-closed">Encerrado</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico 90113/2025 — Manutenção Preventiva e Corretiva de Equipamentos Médico-Hospitalares (Hospital Walter Ferrari + UPA Jaguariúna)</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Jaguariúna/SP</strong> – Prefeitura Municipal</span>
+                <span>📅 Sessão encerrada: <strong>22/01/2026</strong></span>
+                <span>📄 Pregão Eletrônico 90113/2025</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Manutenção equipamentos hospitalares / UPA — monitorar nova edição</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://dosp.com.br/exibe_do.php?i=NzU3NDQw" target="_blank">🔗 Ver Publicação</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=jaguariuna+equipamentos+hospitalares" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== P-CAT 2: SERVIÇOS MÉDICOS ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-p-medicos" onclick="toggleCat('p-medicos')">
+          👨‍⚕️ Serviços Médicos / Mão de Obra / Plantões
+          <span class="cat-count">2 pregões</span>
+        </div>
+        <div class="licit-list" id="cat-p-medicos">
+
+          <!-- P4: COREN-PB -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P4</span>
+                <span class="urgency-pill pill-yellow">🟡 Abertura: 12/05/2026</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico 90001/2026 — Contratação de Serviços de Mão de Obra Terceirizada com Profissionais de Saúde Especializados</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>João Pessoa/PB</strong> – Conselho Regional de Enfermagem da Paraíba (COREN-PB)</span>
+                <span>📅 Abertura: <strong>12/05/2026</strong></span>
+                <span>📄 PE 90001/26 – Compras.gov</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Mão de obra especializada em saúde / Profissionais terceirizados</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://www.corenpb.gov.br/aviso-de-pregao-eletronico-no-90001-26/" target="_blank">🔗 Ver Aviso COREN-PB</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- P5: SESAP/RN SAMU -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P5</span>
+                <span class="urgency-pill pill-red">🔴 SUSPENSO</span>
+                <span class="status-suspended">⚠️ Decisão Judicial</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico 90.191/2025 — Serviços Médicos para Plantões SAMU 192/RN (29 bases — 91 municípios do RN)</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Natal/RN</strong> – SESAP/RN (Secretaria Estadual de Saúde do RN)</span>
+                <span>📄 PE 90.191/2025 – SESAP/RN</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Serviços médicos / Mão de obra / SAMU — aguardar retomada após suspensão judicial (30 dias a partir de maio/2026)</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://www.nelsondantas.com.br/2026/05/justica-suspende-licitacao-para.html" target="_blank">🔗 Ver Notícia</a>
+                <a class="btn-pncp" href="https://pncp.gov.br/app/editais?q=SAMU+servicos+medicos+RN" target="_blank">PNCP</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== P-CAT 3: AMBULÂNCIAS ===== -->
+      <div class="cat-section">
+        <div class="cat-header cat-p-ambulancias" onclick="toggleCat('p-ambulancias')">
+          🚑 Ambulâncias / Locação de Veículos de Saúde
+          <span class="cat-count">4 pregões</span>
+        </div>
+        <div class="licit-list" id="cat-p-ambulancias">
+
+          <!-- P6: Regeneração/PI — UPCOMING -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-green"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P6</span>
+                <span class="urgency-pill pill-green">🟢 Abertura: 12/06/2026</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico Nº 031/2026 — Locação de Veículos sem Motorista para Secretaria Municipal de Saúde</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Regeneração/PI</strong> – Prefeitura Municipal</span>
+                <span>📅 Abertura: <strong>12/06/2026 às 11:00h</strong></span>
+                <span>📄 Pregão Eletrônico 031/2026 – Portal de Compras de Regeneração</span>
+              </div>
+              <div class="licit-compat">🚀 Compatível: Locação de veículos de saúde — <strong>abertura futura, prepare a proposta!</strong></div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://regeneracao.pi.gov.br/2026/05/26/aviso-de-licitacao-pregao-eletronico-no-031-2026-2/" target="_blank">🔗 Ver Aviso</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- P7: Cachoeira Paulista -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P7</span>
+                <span class="urgency-pill pill-yellow">🟡 Data a confirmar</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico — Locação de Ambulância Tipo D UTI Móvel Adulto e Neonatal</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Cachoeira Paulista/SP</strong> – Prefeitura Municipal</span>
+                <span>📄 Pregão Eletrônico – Ambulância Tipo D UTI Móvel</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Locação ambulância UTI Tipo D adulto e neonatal — verificar data de abertura no portal da prefeitura</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://cachoeirapaulista.sp.gov.br/home/licitacao/prefeitura-abre-pregao-para-locacao-de-ambulancia-tipo-d-uti-movel-adulto-e-neonatal/" target="_blank">🔗 Ver Edital</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- P8: SAEG -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-yellow"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P8</span>
+                <span class="urgency-pill pill-yellow">🟡 PE 016/2026</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico 016/2026 — Locação de Veículos</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Guaratinguetá/SP</strong> – SAEG (Superintendência de Água e Esgoto)</span>
+                <span>📄 Pregão Eletrônico 016/2026</span>
+              </div>
+              <div class="licit-compat">⚠️ Verificar escopo: locação de veículos — confirmar se inclui veículos para área de saúde no edital</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://www.saeg.net.br/pregao-eletronico-016-2026-locacao-de-veiculos/" target="_blank">🔗 Ver Edital (SAEG)</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- P9: Potim/SP -->
+          <div class="licit-card">
+            <div class="urgency-bar urgency-red"></div>
+            <div class="licit-body">
+              <div class="licit-top">
+                <span class="licit-num">P9</span>
+                <span class="urgency-pill pill-red">🔴 Encerrado 18/03/2026</span>
+                <span class="status-closed">Encerrado</span>
+              </div>
+              <div class="licit-title">Pregão Eletrônico Nº 009/2026 — Remoção em Ambulância UTI Móvel Tipo D e Remoção Simples Tipo A</div>
+              <div class="licit-meta">
+                <span>🏛️ <strong>Potim/SP</strong> – Secretaria Municipal de Saúde</span>
+                <span>📅 Abertura encerrada: <strong>18/03/2026</strong></span>
+                <span>📄 Pregão Eletrônico 009/2026</span>
+              </div>
+              <div class="licit-compat">✅ Compatível: Serviços de remoção em ambulância UTI — monitorar nova edição ou ata de registro de preços</div>
+              <div class="licit-actions" style="margin-top:10px">
+                <a class="btn-edital" href="https://www.potim.sp.gov.br/aviso-de-licitacao-pregao-eletronico-n-009-2026/" target="_blank">🔗 Ver Aviso</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- NOTA GESTÃO -->
+      <div style="background:#e8eaf6; border:1px solid #9fa8da; border-radius:10px; padding:14px 18px; margin-top:8px; font-size:13px; color:#283593;">
+        <strong>🏥 Gestão Hospitalar / UPA / Pronto Atendimento em Pregão:</strong>
+        Esta categoria raramente usa Pregão Eletrônico — a modalidade habitual é <strong>Chamamento Público</strong> ou <strong>Concorrência</strong>. As 3 oportunidades de gestão hospitalar ativas (Registro/SP, Bertioga/SP, Paraty/RJ) estão na aba <strong>📋 Relatório do Dia</strong>.
+      </div>
+
+    </div><!-- /tab-pregoes -->
+
+  </div><!-- /content -->
+</div><!-- /app -->
 
 <script>
-  // ===== AUTH =====
-  const USERS = { "eder": "2026" };
-
+  // ---- AUTH ----
   function doLogin() {
-    const user = document.getElementById('login-user').value.trim().toLowerCase();
-    const pass = document.getElementById('login-pass').value;
-    const err  = document.getElementById('login-error');
-    if (USERS[user] && USERS[user] === pass) {
-      err.classList.remove('show');
-      localStorage.setItem('gmss_auth', btoa(user + ':' + pass));
-      document.getElementById('login-overlay').classList.add('hidden');
+    const u = document.getElementById('login-user').value.trim().toLowerCase();
+    const p = document.getElementById('login-pass').value;
+    if (u === 'eder' && p === '2026') {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      setDateLabel();
     } else {
-      err.classList.add('show');
-      document.getElementById('login-pass').value = '';
+      document.getElementById('login-error').style.display = 'block';
     }
   }
-
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+  });
   function doLogout() {
-    localStorage.removeItem('gmss_auth');
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
     document.getElementById('login-user').value = '';
     document.getElementById('login-pass').value = '';
-    document.getElementById('login-overlay').classList.remove('hidden');
   }
 
-  function checkAuth() {
-    const stored = localStorage.getItem('gmss_auth');
-    if (stored) {
-      try {
-        const [u, p] = atob(stored).split(':');
-        if (USERS[u] && USERS[u] === p) {
-          document.getElementById('login-overlay').classList.add('hidden');
-          return;
-        }
-      } catch(e) {}
-    }
-    document.getElementById('login-overlay').classList.remove('hidden');
+  // ---- DATE ----
+  function setDateLabel() {
+    const now = new Date();
+    const opts = { weekday:'long', day:'2-digit', month:'long', year:'numeric' };
+    const label = now.toLocaleDateString('pt-BR', opts);
+    document.getElementById('current-date').textContent = label;
+    document.getElementById('report-date-label').textContent =
+      'Gerado em ' + label + ' · 18 oportunidades identificadas';
   }
 
-  // Enter key on login
-  ['login-user','login-pass'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  });
-
-  // ===== KEYWORDS =====
-  const DEFAULT_KEYWORDS = [
-    { term: "equipamento hospitalar",     cat: "Locação de Equipamentos" },
-    { term: "locação equipamentos médicos",cat: "Locação de Equipamentos" },
-    { term: "ambulância",                 cat: "Locação de Veículos" },
-    { term: "locação veículo saúde",      cat: "Locação de Veículos" },
-    { term: "mão de obra médica",         cat: "Gestão de Pessoal" },
-    { term: "gestão saúde",               cat: "Gestão de Pessoal" },
-    { term: "pronto socorro",             cat: "Atendimento Médico" },
-    { term: "pronto atendimento",         cat: "Atendimento Médico" },
-    { term: "consulta ambulatorial",      cat: "Atendimento Médico" },
-  ];
-
-  const PORTALS = [
-    { name: "PNCP",                       url: kw => `https://pncp.gov.br/app/editais?q=${encodeURIComponent(kw)}` },
-    { name: "Portal de Compras Públicas", url: kw => `https://www.portaldecompraspublicas.com.br/processos/?busca=${encodeURIComponent(kw)}` },
-    { name: "BLL",                        url: kw => `https://bll.org.br/licitacao?q=${encodeURIComponent(kw)}` },
-    { name: "Alerta Licitação",           url: kw => `https://alertalicitacao.com.br/?s=${encodeURIComponent(kw)}` },
-    { name: "BEC/SP",                     url: kw => `https://www.bec.sp.gov.br/BEC_Pregao_UI/ui/compradores/frmConsultaPregoesEletronicos.aspx?txtObjeto=${encodeURIComponent(kw)}&btnBuscar=Pesquisar` },
-    { name: "Portal Transparência",       url: _  => `https://portaldatransparencia.gov.br/licitacoes` },
-  ];
-
-  let keywords = [];
-
-  function loadKeywords() {
-    try {
-      const s = localStorage.getItem('gmss_keywords');
-      keywords = s ? JSON.parse(s) : DEFAULT_KEYWORDS.map(k => ({...k}));
-    } catch(e) { keywords = DEFAULT_KEYWORDS.map(k => ({...k})); }
-    renderAll();
-  }
-
-  function saveKeywords() { try { localStorage.setItem('gmss_keywords', JSON.stringify(keywords)); } catch(e) {} }
-
-  function renderAll() {
-    const el = document.getElementById('kw-count');
-    if (el) el.textContent = keywords.length;
-
-    // tags
-    const c = document.getElementById('keywords-container');
-    c.innerHTML = '';
-    keywords.forEach((kw, i) => {
-      const tag = document.createElement('span');
-      tag.className = 'keyword-tag';
-      tag.innerHTML = `${kw.term} <button onclick="removeKeyword(${i})" title="Remover">×</button>`;
-      c.appendChild(tag);
-    });
-
-    // table
-    const tb = document.getElementById('keywords-table');
-    tb.innerHTML = '';
-    keywords.forEach((kw, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="color:#9ca3af;width:36px">${i+1}</td><td><strong>${kw.term}</strong></td><td style="color:#6b7280;font-size:12px">${kw.cat||'—'}</td>`;
-      tb.appendChild(tr);
-    });
-
-    // search links
-    const lc = document.getElementById('search-links-container');
-    lc.innerHTML = '';
-    PORTALS.forEach(portal => {
-      const card = document.createElement('div');
-      card.className = 'config-card';
-      card.style.marginBottom = '16px';
-      const rows = keywords.map(kw =>
-        `<tr><td>${kw.term}</td><td style="color:#9ca3af;font-size:12px">${kw.cat||''}</td><td><a href="${portal.url(kw.term)}" target="_blank">🔗 Abrir busca</a></td></tr>`
-      ).join('');
-      card.innerHTML = `<h2 style="margin-bottom:12px">🔍 ${portal.name}</h2>
-        <table class="search-links-table">
-          <thead><tr><th>Termo</th><th>Categoria</th><th>Link</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>`;
-      lc.appendChild(card);
-    });
-  }
-
-  function addKeyword() {
-    const inp = document.getElementById('new-keyword');
-    const val = inp.value.trim();
-    if (!val) return;
-    if (keywords.find(k => k.term.toLowerCase() === val.toLowerCase())) {
-      inp.style.borderColor = '#ef4444';
-      setTimeout(() => inp.style.borderColor = '', 1200);
-      return;
-    }
-    keywords.push({ term: val, cat: 'Personalizado' });
-    saveKeywords(); inp.value = ''; renderAll();
-  }
-
-  function removeKeyword(i) { keywords.splice(i,1); saveKeywords(); renderAll(); }
-
-  document.getElementById('new-keyword').addEventListener('keydown', e => { if (e.key==='Enter') addKeyword(); });
-
-  function switchTab(name, btn) {
+  // ---- TABS ----
+  function showTab(id, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-'+name).classList.add('active');
-    if (btn) btn.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
   }
 
-  // Date
-  document.getElementById('last-update').textContent =
-    new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  // ---- COLLAPSE CATEGORIES ----
+  function toggleCat(id) {
+    const el = document.getElementById('cat-' + id);
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+  }
 
-  // Init
-  checkAuth();
-  loadKeywords();
+  // ---- KEYWORDS ----
+  const defaultKeywords = [
+    'equipamento hospitalar','locação equipamentos médicos','ambulância',
+    'locação veículo saúde','mão de obra médica','gestão saúde',
+    'pronto socorro','pronto atendimento','consulta ambulatorial',
+    'UTI móvel','serviços médicos'
+  ];
+  let keywords = JSON.parse(localStorage.getItem('gmss_keywords') || 'null') || [...defaultKeywords];
+
+  function renderKeywords() {
+    const list = document.getElementById('keyword-list');
+    list.innerHTML = keywords.map((kw, i) =>
+      `<span class="keyword-tag">${kw}<button onclick="removeKeyword(${i})" title="Remover">×</button></span>`
+    ).join('');
+  }
+  function addKeyword() {
+    const input = document.getElementById('kw-input');
+    const val = input.value.trim();
+    if (val && !keywords.includes(val)) { keywords.push(val); saveKW(); renderKeywords(); }
+    input.value = '';
+  }
+  function removeKeyword(i) { keywords.splice(i, 1); saveKW(); renderKeywords(); }
+  function clearKeywords() { keywords = []; saveKW(); renderKeywords(); }
+  function saveKW() { localStorage.setItem('gmss_keywords', JSON.stringify(keywords)); }
+
+  function openPortals() {
+    const q = keywords.slice(0, 3).join(' ');
+    const enc = encodeURIComponent(q);
+    const urls = [
+      `https://pncp.gov.br/app/editais?q=${enc}&status=divulgado`,
+      `https://alertalicitacao.com.br/?q=${enc}`
+    ];
+    urls.forEach(u => window.open(u, '_blank'));
+  }
+
+  renderKeywords();
 </script>
 </body>
 </html>
