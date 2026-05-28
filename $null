@@ -1,0 +1,7 @@
+Exceção ao chamar "WriteAllText" com "3" argumento(s): "O acesso ao caminho 'C:\index.html' foi negado."
+No linha:1 caractere:232
++ ... '; } else { [System.IO.File]::WriteAllText('\index.html', $html, [Sys ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : UnauthorizedAccessException
+ 
